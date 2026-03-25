@@ -19,7 +19,6 @@
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Pretendard', sans-serif; }
         body { display: flex; height: 100vh; overflow: hidden; background: var(--bg); color: var(--text-main); }
         
-        /* 레이아웃 스타일 유지 */
         .left-panel { width: 420px; background: var(--card-bg); border-right: 1px solid var(--border); display: flex; flex-direction: column; z-index: 100; box-shadow: 4px 0 20px rgba(0,0,0,0.03); }
         .header { padding: 24px 20px; background: #ffffff; color: var(--primary); display: flex; justify-content: space-between; align-items: center; font-weight: 800; font-size: 22px; border-bottom: 1px solid var(--border); }
         .scroll-area { flex: 1; overflow-y: auto; padding: 20px; }
@@ -51,12 +50,23 @@
         select { width: 100%; padding: 10px; border-radius: 8px; border: 1px solid var(--border); margin-bottom: 10px; font-size: 13px; background: #fdfdfd; }
         
         /* 관리자 팝업 UI */
-        #admin-panel { position: absolute; bottom: 80px; right: 20px; width: 320px; background: white; border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); z-index: 2000; overflow: hidden; display: none; border: 1px solid var(--primary); }
+        #admin-panel { position: absolute; bottom: 85px; right: 20px; width: 320px; background: white; border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); z-index: 2000; overflow: hidden; display: none; border: 1px solid var(--primary); }
         .admin-header { background: var(--primary); color: white; padding: 12px 15px; font-weight: 700; display: flex; justify-content: space-between; }
         .admin-body { padding: 15px; max-height: 450px; overflow-y: auto; }
         .admin-input { width: 100%; padding: 8px; margin-bottom: 8px; border: 1px solid var(--border); border-radius: 6px; font-size: 12px; }
         .admin-btn { width: 100%; padding: 10px; background: var(--primary); color: white; border: none; border-radius: 6px; font-weight: 700; cursor: pointer; margin-top: 5px; }
-        #admin-toggle { position: absolute; bottom: 20px; right: 20px; width: 50px; height: 50px; background: var(--primary); color: white; border-radius: 25px; border: none; font-size: 24px; cursor: pointer; z-index: 1999; box-shadow: var(--shadow); }
+
+        /* [수정됨] 우측 하단 버튼: 텍스트 형태로 변경 */
+        #admin-toggle { 
+            position: absolute; bottom: 30px; right: 30px; 
+            background: var(--primary); color: white; 
+            padding: 14px 24px; border-radius: 50px; border: none; 
+            font-weight: 700; font-size: 14px; cursor: pointer; 
+            z-index: 1999; box-shadow: 0 10px 25px rgba(59, 130, 246, 0.4); 
+            transition: all 0.2s;
+        }
+        #admin-toggle:hover { transform: translateY(-3px); background: #2563eb; }
+
         .del-btn { color: var(--danger); cursor: pointer; font-size: 11px; margin-left: 5px; font-weight: bold; }
         .fixed-badge { font-size: 10px; color: #94a3b8; margin-left: 5px; }
     </style>
@@ -106,7 +116,8 @@
 
 <div class="right-panel">
     <div id="map"></div>
-    <button id="admin-toggle" onclick="toggleAdmin()">⚙️</button>
+    <button id="admin-toggle" onclick="toggleAdmin()">+ 신규 음식점 추가</button>
+    
     <div id="admin-panel">
         <div class="admin-header">식당 관리 <span onclick="toggleAdmin()" style="cursor:pointer;">×</span></div>
         <div class="admin-body">
@@ -122,7 +133,7 @@
             <input type="text" id="add-rate" class="admin-input" placeholder="평점 (예: 85)">
             <input type="text" id="add-tel" class="admin-input" placeholder="전화번호">
             <input type="text" id="add-addr" class="admin-input" placeholder="주소">
-            <button class="admin-btn" onclick="addNewRest()">신규 식당 등록</button>
+            <button class="admin-btn" onclick="addNewRest()">식당 등록 하기</button>
             <hr style="margin:15px 0; border:0; border-top:1px solid var(--border);">
             <div id="rest-manage-list" style="font-size:12px;"></div>
         </div>
@@ -136,7 +147,7 @@
     
     const emps = ["김미연", "김혁중", "류한식", "박윤영", "송원호", "신윤철", "안서형", "우성욱", "이홍비", "임호준", "장현진"];
     
-    // [보호됨] 초기 60개 식당 리스트 (isFixed: true 속성 추가)
+    // 초기 60개 데이터 (전체 유지)
     const fixedRests = [
         {"name":"얌얌한식뷔페","lat":37.476515,"lng":126.889612,"cat":"뷔페","dist":"10m","menu":"한식뷔페","rate":"83.75","tel":"010-5453-1253","addr":"아스크타워 2층","isFixed":true},
         {"name":"무스탕키친","lat":37.476927,"lng":126.889926,"cat":"인도네팔","dist":"10m","menu":"커리","rate":"82","tel":"0507-1315-4575","addr":"아스크타워","isFixed":true},
@@ -203,6 +214,7 @@
     let allRests = [];
     let markers = [];
     let selectedRestData = null;
+    let map;
 
     window.onload = function() {
         map = new naver.maps.Map('map', { center: new naver.maps.LatLng(37.476742, 126.889731), zoom: 17 });
@@ -218,15 +230,13 @@
             icon: { content: '<div style="background:var(--danger); color:white; padding:6px 14px; border-radius:30px; font-weight:700; font-size:13px; box-shadow:0 4px 10px rgba(0,0,0,0.2);">아스크타워</div>', anchor: new naver.maps.Point(40, 15) }
         });
 
-        // [수정됨] 실시간 데이터 로드 로직 (고정 데이터 + DB 데이터 병합)
         db.ref('restaurants').on('value', snap => {
             const dbData = snap.val() || {};
             const dbRests = Object.keys(dbData).map(key => ({ id: key, ...dbData[key], isFixed: false }));
-            allRests = [...fixedRests, ...dbRests]; // 초기 60개 뒤에 신규 식당이 붙음
+            allRests = [...fixedRests, ...dbRests];
             updateRestUI();
         });
 
-        // 투표 실시간 연동
         db.ref('lunch_vote').on('value', snap => {
             const data = snap.val() || {};
             document.getElementById('menu1').value = data.menu1 || "";
@@ -282,7 +292,6 @@
 
             const item = document.createElement('div');
             item.style.margin = "5px 0";
-            // [수정됨] 고정 식당은 삭제 버튼 대신 배지 표시
             if (r.isFixed) {
                 item.innerHTML = `${idx + 1}. ${r.name} <span class="fixed-badge">(고정)</span>`;
             } else {
@@ -304,8 +313,6 @@
         document.getElementById('res-addr').innerText = r.addr;
         document.getElementById('link-map').href = `https://map.naver.com/v5/search/${encodeURIComponent(r.name)}`;
         document.getElementById('link-menu').href = `https://search.naver.com/search.naver?query=${encodeURIComponent(r.name + ' 메뉴판')}`;
-        
-        // [수정됨] 고정 식당이면 하단 상세창에서도 삭제 버튼 숨김
         document.getElementById('btn-delete-rest').style.display = r.isFixed ? 'none' : 'block';
     }
 
