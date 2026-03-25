@@ -8,7 +8,6 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
     <style>
-        /* 기존 스타일 유지 */
         @import url('https://fonts.googleapis.com/css2?family=Pretendard:wght@400;600;700&display=swap');
         :root { 
             --primary: #3b82f6; --accent: #f59e0b; --danger: #ef4444; 
@@ -23,49 +22,37 @@
         .section { margin-bottom: 24px; background: #fff; border: 1px solid var(--border); border-radius: 12px; padding: 16px; box-shadow: var(--shadow); }
         .section-title { font-size: 15px; font-weight: 700; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center; color: var(--text-main); }
         .reset-btn { background: #f1f5f9; border: none; padding: 4px 10px; border-radius: 6px; font-size: 11px; color: var(--text-sub); cursor: pointer; }
+        
+        /* 테이블 디자인 */
         .voting-table { width: 100%; border-collapse: separate; border-spacing: 0; font-size: 13px; }
         .voting-table th { padding: 12px 4px; background: #f8fafc; font-weight: 600; color: var(--text-sub); border-bottom: 2px solid var(--border); }
         .voting-table td { padding: 10px 4px; border-bottom: 1px solid #f1f5f9; text-align: center; }
         .menu-label { color: var(--accent); display: block; font-size: 11px; font-weight: 600; margin-top: 4px; }
+        
+        /* [유지됨] 메뉴별 투표 인원수 배지 */
         .count-badge { color: var(--primary); font-size: 11px; font-weight: 700; background: #eff6ff; padding: 2px 6px; border-radius: 10px; margin-left: 4px; }
+
         #bottom-info-panel { padding: 24px; background: #fff; border-top: 1px solid var(--border); min-height: 280px; display: none; border-radius: 20px 20px 0 0; box-shadow: 0 -10px 25px rgba(0,0,0,0.05); }
         .info-title { font-size: 20px; font-weight: 700; color: var(--text-main); margin-bottom: 4px; }
         .info-row { font-size: 13px; margin-bottom: 8px; color: var(--text-sub); display: flex; align-items: center; }
         .info-label { font-weight: 600; color: #94a3b8; width: 80px; flex-shrink: 0; }
         .info-btns { display: flex; gap: 10px; margin-top: 20px; }
         .btn-link { flex: 1; padding: 14px; border-radius: 10px; text-align: center; text-decoration: none; color: white; font-weight: 700; font-size: 14px; }
+        
         .right-panel { flex: 1; position: relative; }
         #map { width: 100%; height: 100%; }
         .custom-marker { background: white; border: 1px solid var(--primary); border-radius: 8px; padding: 4px 10px; font-size: 12px; font-weight: 600; cursor: pointer; box-shadow: 0 4px 6px rgba(0,0,0,0.1); white-space: nowrap; }
 
-        /* [수정됨] 신규 음식점 추가 버튼 스타일 */
+        /* [수정됨] 신규 음식점 추가 버튼 */
         .add-res-btn {
-            position: absolute;
-            bottom: 30px;
-            right: 30px;
-            background: var(--primary);
-            color: white;
-            padding: 14px 24px;
-            border-radius: 50px;
-            font-weight: 700;
-            font-size: 14px;
-            box-shadow: 0 10px 25px rgba(59, 130, 246, 0.4);
-            cursor: pointer;
-            z-index: 1000;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            transition: all 0.2s ease;
-            border: none;
+            position: absolute; bottom: 30px; right: 30px; background: var(--primary); color: white;
+            padding: 14px 24px; border-radius: 50px; font-weight: 700; font-size: 14px;
+            box-shadow: 0 10px 25px rgba(59, 130, 246, 0.4); cursor: pointer; z-index: 1000;
+            display: flex; align-items: center; gap: 8px; border: none; transition: all 0.2s;
         }
-        .add-res-btn:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 15px 30px rgba(59, 130, 246, 0.5);
-            background: #2563eb;
-        }
-        .add-res-btn svg { width: 18px; height: 18px; }
+        .add-res-btn:hover { transform: translateY(-3px); background: #2563eb; }
 
-        select { width: 100%; padding: 10px; border-radius: 8px; border: 1px solid var(--border); margin-bottom: 10px; font-size: 13px; background: #fdfdfd; outline: none; }
+        select { width: 100%; padding: 10px; border-radius: 8px; border: 1px solid var(--border); margin-bottom: 10px; font-size: 13px; background: #fdfdfd; }
         input[type="radio"] { width: 16px; height: 16px; cursor: pointer; accent-color: var(--primary); }
     </style>
 </head>
@@ -96,10 +83,7 @@
         </div>
     </div>
     <div id="bottom-info-panel">
-        <div class="info-header">
-            <div class="info-title" id="res-name">-</div>
-            <div style="font-size:13px; color:var(--primary); font-weight:600;" id="res-cat">-</div>
-        </div>
+        <div class="info-header"><div class="info-title" id="res-name">-</div><div style="font-size:13px; color:var(--primary); font-weight:600;" id="res-cat">-</div></div>
         <div class="info-row"><span class="info-label">거리/평점</span> <span id="res-dist">-</span> · <span id="res-rate">-</span></div>
         <div class="info-row"><span class="info-label">대표메뉴</span> <span id="res-menu" style="color:var(--text-main); font-weight:600;">-</span></div>
         <div class="info-row"><span class="info-label">전화번호</span> <span id="res-tel">-</span></div>
@@ -113,45 +97,153 @@
 
 <div class="right-panel">
     <div id="map"></div>
-    
-    <button class="add-res-btn" onclick="addNewRestaurant()">
-        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
-        신규 음식점 추가
-    </button>
+    <button class="add-res-btn" onclick="addNewRestaurant()">+ 신규 음식점 추가</button>
 </div>
 
 <script>
-    // 기존 Firebase 설정 및 데이터 유지
     const firebaseConfig = { apiKey: "AIzaSyAcyRvDUV67IJi3o8Z1Dl2tDHBATCN_d4Q", authDomain: "lunch-menu-3c36c.firebaseapp.com", databaseURL: "https://lunch-menu-3c36c-default-rtdb.firebaseio.com", projectId: "lunch-menu-3c36c", storageBucket: "lunch-menu-3c36c.appspot.com", messagingSenderId: "498939490952", appId: "1:498939490952:web:9849dd97c3089a153a253d" };
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
     
     const emps = ["김미연", "김혁중", "류한식", "박윤영", "송원호", "신윤철", "안서형", "우성욱", "이홍비", "임호준", "장현진"];
-    const rests = [ /* ... 60개 식당 데이터 생략 (실제 코드에는 포함) ... */ ];
+    
+    // [복구됨] 식당 데이터 60개 전체
+    const rests = [
+        {"name":"얌얌한식뷔페","lat":37.476515,"lng":126.889612,"cat":"뷔페","dist":"10m","menu":"한식뷔페","rate":"83.75","tel":"010-5453-1253","addr":"아스크타워 2층","note":"구내식당"},
+        {"name":"무스탕키친","lat":37.476927,"lng":126.889926,"cat":"인도네팔","dist":"10m","menu":"커리","rate":"82","tel":"0507-1315-4575","addr":"아스크타워","note":"저녁만 영업"},
+        {"name":"도쎄멕시칸","lat":37.476421,"lng":126.889774,"cat":"남미음식","dist":"15m","menu":"타코,브리또","rate":"85","tel":"02-3467-4569","addr":"A동 1층","note":""},
+        {"name":"가온담","lat":37.476753,"lng":126.890088,"cat":"국,탕,찌개","dist":"20m","menu":"감자탕","rate":"86.5","tel":"02-3467-4530","addr":"아스크타워","note":"양이 많음"},
+        {"name":"구름산 추어탕","lat":37.476831,"lng":126.890001,"cat":"국밥","dist":"20m","menu":"추어탕","rate":"88","tel":"0507-1490-4549","addr":"아스크타워","note":"보쌈 서비스"},
+        {"name":"토리키치","lat":37.476954,"lng":126.889912,"cat":"일식","dist":"20m","menu":"야키토리동","rate":"80","tel":"02-2686-8585","addr":"S동 1층","note":""},
+        {"name":"삼교리동치미막국수","lat":37.477039,"lng":126.890081,"cat":"면","dist":"25m","menu":"막국수,육개장","rate":"85","tel":"02-3467-4568","addr":"아스크타워","note":""},
+        {"name":"세븐볶음","lat":37.477104,"lng":126.890047,"cat":"밥","dist":"30m","menu":"직화볶음","rate":"85","tel":"02-3467-4797","addr":"아스크타워","note":"양념 매움"},
+        {"name":"오투닭갈비&부대찌개","lat":37.476856,"lng":126.890232,"cat":"고기","dist":"38m","menu":"닭갈비,부대찌개","rate":"83","tel":"02-3467-4548","addr":"아스크타워","note":""},
+        {"name":"맛깔참죽 완도미역","lat":37.476785,"lng":126.890280,"cat":"죽","dist":"40m","menu":"죽,뚝배기밥","rate":"84","tel":"02-3467-4585","addr":"아스크타워","note":""},
+        {"name":"착한소있소","lat":37.477078,"lng":126.890401,"cat":"탕","dist":"41m","menu":"갈비탕,국밥","rate":"85","tel":"0507-1446-9299","addr":"가산동","note":""},
+        {"name":"명자수제돈까스","lat":37.477189,"lng":126.890241,"cat":"일식","dist":"41m","menu":"돈까스,우동","rate":"88.5","tel":"0507-1446-6188","addr":"가산동","note":"생선까스 최고"},
+        {"name":"용","lat":37.477109,"lng":126.890506,"cat":"중식","dist":"42m","menu":"짜장,짬뽕","rate":"89","tel":"0507-1419-3469","addr":"가산동","note":""},
+        {"name":"개성손만두","lat":37.476794,"lng":126.890529,"cat":"만두","dist":"43m","menu":"만두전골","rate":"90","tel":"0507-1439-8886","addr":"가산동","note":"볶음밥 안됨"},
+        {"name":"명가순대국","lat":37.477546,"lng":126.889909,"cat":"탕","dist":"50m","menu":"순대국","rate":"85","tel":"070-8259-1235","addr":"가산동","note":"고추 매움"},
+        {"name":"밥생선구이","lat":37.476974,"lng":126.890551,"cat":"밥","dist":"55m","menu":"생선구이","rate":"80","tel":"02-853-8776","addr":"가산동","note":""},
+        {"name":"춘천옥","lat":37.477850,"lng":126.889697,"cat":"보쌈","dist":"70m","menu":"보쌈정식","rate":"88","tel":"02-868-9937","addr":"가산동","note":"정식 13000원"},
+        {"name":"더덕솥뚜껑삼겹살","lat":37.477806,"lng":126.889905,"cat":"고기","dist":"84m","menu":"된장,순두부","rate":"-","tel":"02-868-9592","addr":"가산동","note":""},
+        {"name":"삼복토종닭도리탕","lat":37.477858,"lng":126.890024,"cat":"탕","dist":"90m","menu":"닭도리탕","rate":"-","tel":"0507-1371-0238","addr":"가산동","note":""},
+        {"name":"민속식당","lat":37.477902,"lng":126.888881,"cat":"면","dist":"100m","menu":"칼국수,수제비","rate":"83","tel":"-","addr":"현대아울렛","note":""},
+        {"name":"단정","lat":37.477748,"lng":126.889317,"cat":"솥밥","dist":"100m","menu":"솥밥","rate":"86.5","tel":"010-8838-3987","addr":"현대아울렛","note":""},
+        {"name":"북창동순두부","lat":37.477923,"lng":126.889213,"cat":"밥","dist":"100m","menu":"순두부","rate":"-","tel":"0507-1363-0269","addr":"현대아울렛","note":""},
+        {"name":"사월에보리밥","lat":37.477434,"lng":126.888973,"cat":"밥,찌개","dist":"100m","menu":"보리밥,쭈꾸미","rate":"90","tel":"02-2136-9957","addr":"현대아울렛","note":"무한리필"},
+        {"name":"두끼","lat":37.477596,"lng":126.888783,"cat":"분식","dist":"100m","menu":"떡볶이뷔페","rate":"82.6","tel":"02-2136-9960","addr":"현대아울렛","note":""},
+        {"name":"백초밥","lat":37.477324,"lng":126.889030,"cat":"일식","dist":"100m","menu":"초밥","rate":"-","tel":"0507-1429-9959","addr":"현대아울렛","note":""},
+        {"name":"마치다쇼텐","lat":37.478497,"lng":126.885305,"cat":"라멘","dist":"100m","menu":"라멘","rate":"-","tel":"0507-1321-7493","addr":"마리오아울렛","note":""},
+        {"name":"광화문미진","lat":37.477730,"lng":126.888808,"cat":"면","dist":"100m","menu":"메밀,돈까스","rate":"-","tel":"0507-1469-9907","addr":"현대아울렛","note":""},
+        {"name":"101번지남산돈까스","lat":37.477510,"lng":126.888902,"cat":"일식","dist":"100m","menu":"돈까스","rate":"88","tel":"02-2136-9958","addr":"현대아울렛","note":""},
+        {"name":"니뽕내뽕","lat":37.477871,"lng":126.888795,"cat":"중식","dist":"100m","menu":"짬뽕,피자","rate":"-","tel":"02-2136-9963","addr":"현대아울렛","note":""},
+        {"name":"전주식당","lat":37.477052,"lng":126.890982,"cat":"밥","dist":"101m","menu":"백반","rate":"-","tel":"02-853-0302","addr":"가산동","note":"1인 안됨"},
+        {"name":"보경닭한마리","lat":37.478035,"lng":126.890312,"cat":"탕","dist":"105m","menu":"삼계탕","rate":"-","tel":"02-865-8461","addr":"가산동","note":""},
+        {"name":"연식당순대국","lat":37.478049,"lng":126.890375,"cat":"탕","dist":"110m","menu":"순대국","rate":"-","tel":"0507-1426-5188","addr":"가산동","note":""},
+        {"name":"역전우동","lat":37.475355,"lng":126.890435,"cat":"일식","dist":"140m","menu":"우동,돈까스","rate":"-","tel":"02-862-0101","addr":"가산센트럴","note":""},
+        {"name":"한솥도시락","lat":37.475391,"lng":126.890379,"cat":"밥","dist":"150m","menu":"도시락","rate":"-","tel":"02-855-1117","addr":"가산센트럴","note":""},
+        {"name":"싸다김밥","lat":37.475152,"lng":126.890561,"cat":"분식","dist":"170m","menu":"김밥,분식","rate":"-","tel":"02-859-8887","addr":"가산센트럴","note":""},
+        {"name":"맘스터치","lat":37.475314,"lng":126.890451,"cat":"양식","dist":"190m","menu":"버거","rate":"-","tel":"02-855-7776","addr":"가산센트럴","note":""},
+        {"name":"서울막창","lat":37.475110,"lng":126.890632,"cat":"고기","dist":"200m","menu":"뚝곱창,막국수","rate":"-","tel":"02-808-5837","addr":"가산센트럴","note":""},
+        {"name":"마라홀릭","lat":37.475067,"lng":126.890650,"cat":"중식","dist":"210m","menu":"마라탕","rate":"-","tel":"0507-1381-7539","addr":"가산센트럴","note":""},
+        {"name":"미분당","lat":37.475008,"lng":126.891136,"cat":"면","dist":"300m","menu":"쌀국수","rate":"91","tel":"02-855-9841","addr":"가산센트럴","note":"양 푸짐"},
+        {"name":"정백어가","lat":37.476613,"lng":126.887140,"cat":"밥","dist":"300m","menu":"생선구이","rate":"-","tel":"0507-1322-8522","addr":"가산퍼블릭","note":""},
+        {"name":"소요카제","lat":37.475134,"lng":126.891399,"cat":"면","dist":"304m","menu":"라멘","rate":"84","tel":"0507-1480-2988","addr":"가산센트럴","note":""},
+        {"name":"본래순대","lat":37.474677,"lng":126.890426,"cat":"탕","dist":"305m","menu":"순대국","rate":"-","tel":"02-6230-5556","addr":"테라타워","note":""},
+        {"name":"진케이","lat":37.475101,"lng":126.891316,"cat":"일식","dist":"305m","menu":"돈까스","rate":"70","tel":"02-852-9892","addr":"가산센트럴","note":""},
+        {"name":"반마리찜닭","lat":37.474641,"lng":126.890346,"cat":"밥","dist":"308m","menu":"찜닭","rate":"-","tel":"-","addr":"테라타워","note":""},
+        {"name":"본죽&비빔밥","lat":37.474614,"lng":126.890289,"cat":"죽","dist":"310m","menu":"죽,비빔밥","rate":"-","tel":"0507-1481-5522","addr":"테라타워","note":""},
+        {"name":"포빈","lat":37.474172,"lng":126.889909,"cat":"면,밥","dist":"320m","menu":"쌀국수","rate":"84","tel":"0507-1409-2085","addr":"테라타워","note":""},
+        {"name":"보승회관","lat":37.474096,"lng":126.889676,"cat":"국밥","dist":"325m","menu":"국밥,냉면","rate":"-","tel":"02-6230-6789","addr":"테라타워","note":""},
+        {"name":"조려당","lat":37.473987,"lng":126.889357,"cat":"밥","dist":"338m","menu":"두부조림","rate":"-","tel":"02-2085-0127","addr":"타워클래식","note":""},
+        {"name":"소플러스","lat":37.474071,"lng":126.890126,"cat":"고기","dist":"340m","menu":"솥밥,찌개","rate":"84","tel":"-","addr":"가산동","note":""},
+        {"name":"담소소사골순대","lat":37.473942,"lng":126.889373,"cat":"탕","dist":"340m","menu":"순대국,육개장","rate":"-","tel":"02-2085-0151","addr":"타워클래식","note":""},
+        {"name":"궁정짬뽕","lat":37.473911,"lng":126.889257,"cat":"중식","dist":"345m","menu":"짬뽕","rate":"92","tel":"02-2085-0119","addr":"타워클래식","note":""},
+        {"name":"새벽집","lat":37.473744,"lng":126.889014,"cat":"밥","dist":"348m","menu":"청국장,찌개","rate":"-","tel":"0507-1374-0180","addr":"타워클래식","note":""},
+        {"name":"동그라미 김치찌개","lat":37.473724,"lng":126.888950,"cat":"밥","dist":"350m","menu":"김치찌개","rate":"90","tel":"0507-1335-0137","addr":"타워클래식","note":""},
+        {"name":"오한수우육면가","lat":37.473703,"lng":126.888871,"cat":"면","dist":"352m","menu":"우육탕면","rate":"-","tel":"0507-1402-0184","addr":"타워클래식","note":""},
+        {"name":"신전떡볶이","lat":37.473635,"lng":126.888748,"cat":"분식","dist":"355m","menu":"떡볶이","rate":"93","tel":"0507-1392-8259","addr":"타워클래식","note":""},
+        {"name":"마이푸드","lat":37.476652,"lng":126.885938,"cat":"뷔페","dist":"370m","menu":"한식뷔페","rate":"90","tel":"-","addr":"벽산디지털5차","note":"반찬 6개"},
+        {"name":"애슐리퀸즈","lat":37.476269,"lng":126.887158,"cat":"뷔페","dist":"380m","menu":"뷔페","rate":"-","tel":"-","addr":"가산퍼블릭","note":""},
+        {"name":"큐큐면관","lat":37.480708,"lng":126.885177,"cat":"중식","dist":"380m","menu":"유니짜장","rate":"-","tel":"0507-1401-5050","addr":"가산퍼블릭","note":""},
+        {"name":"자연밥상","lat":37.473857,"lng":126.887292,"cat":"밥","dist":"450m","menu":"백반","rate":"86.5","tel":"02-869-4578","addr":"가산동","note":""},
+        {"name":"진된장","lat":37.480679,"lng":126.885032,"cat":"찌개","dist":"580m","menu":"된장찌개","rate":"93","tel":"0507-1469-0429","addr":"가산동","note":"수육 맛집"}
+    ];
 
     let map;
 
     window.onload = function() {
-        // 기존 초기화 로직 유지
         const sels = [document.getElementById('menu1'), document.getElementById('menu2'), document.getElementById('menu3')];
         rests.forEach(r => sels.forEach(s => s.add(new Option(`[${r.cat}] ${r.name}`, r.name))));
+        
         map = new naver.maps.Map('map', { center: new naver.maps.LatLng(37.476742, 126.889731), zoom: 17 });
-        // ... (마커 생성 로직 생략) ...
+
+        new naver.maps.Marker({
+            position: new naver.maps.LatLng(37.476742, 126.889731),
+            map: map,
+            icon: { content: '<div style="background:var(--danger); color:white; padding:6px 14px; border-radius:30px; font-weight:700; font-size:13px; box-shadow:0 4px 10px rgba(0,0,0,0.2);">아스크타워</div>', anchor: new naver.maps.Point(40, 15) }
+        });
+
+        rests.forEach(r => {
+            const marker = new naver.maps.Marker({
+                position: new naver.maps.LatLng(r.lat, r.lng),
+                map: map,
+                icon: { content: `<div class="custom-marker">${r.name}</div>`, anchor: new naver.maps.Point(40, 15) }
+            });
+            naver.maps.Event.addListener(marker, 'click', () => {
+                document.getElementById('bottom-info-panel').style.display = 'block';
+                document.getElementById('res-name').innerText = r.name;
+                document.getElementById('res-cat').innerText = r.cat;
+                document.getElementById('res-dist').innerText = r.dist;
+                document.getElementById('res-menu').innerText = r.menu;
+                document.getElementById('res-rate').innerText = '⭐' + r.rate;
+                document.getElementById('res-tel').innerText = r.tel;
+                document.getElementById('res-addr').innerText = r.addr;
+                document.getElementById('link-map').href = `https://map.naver.com/v5/search/${encodeURIComponent(r.name)}`;
+                document.getElementById('link-menu').href = `https://search.naver.com/search.naver?query=${encodeURIComponent(r.name + ' 메뉴판')}`;
+            });
+        });
+
+        db.ref('lunch_vote').on('value', snap => {
+            const data = snap.val() || {};
+            document.getElementById('menu1').value = data.menu1 || "";
+            document.getElementById('menu2').value = data.menu2 || "";
+            document.getElementById('menu3').value = data.menu3 || "";
+            document.getElementById('label-m1').innerText = data.menu1 || "-";
+            document.getElementById('label-m2').innerText = data.menu2 || "-";
+            document.getElementById('label-m3').innerText = data.menu3 || "-";
+
+            const tbody = document.getElementById('list'); tbody.innerHTML = '';
+            let totalVoted = 0;
+            const menuCounts = { 1: 0, 2: 0, 3: 0 }; // [유지됨] 실시간 집계 객체
+
+            emps.forEach((name, i) => {
+                const v = data['vote_'+i] || 0;
+                if(v > 0) { totalVoted++; menuCounts[v]++; }
+                const tr = document.createElement('tr');
+                tr.innerHTML = `<td style="font-weight:600;">${name}</td>` + 
+                    [1,2,3].map(n => `<td><input type="radio" name="v${i}" ${v==n?'checked':''} onclick="vote(${i},${n})"></td>`).join('');
+                tbody.appendChild(tr);
+            });
+
+            document.getElementById('total-participants').innerText = totalVoted;
+            document.getElementById('count-m1').innerText = menuCounts[1];
+            document.getElementById('count-m2').innerText = menuCounts[2];
+            document.getElementById('count-m3').innerText = menuCounts[3];
+        });
     };
 
-    // [수정됨] 신규 음식점 추가 함수
-    function addNewRestaurant() {
-        const name = prompt("추가하실 음식점 이름을 입력해주세요.");
-        if(name) {
-            alert(`'${name}' 식당 정보를 입력하는 창을 띄웁니다. (기능 구현 예정)`);
-            // 여기에 실제 데이터베이스 저장 로직을 연결할 수 있습니다.
-        }
-    }
-
-    // 기타 sync, vote, resetData 함수 유지
     function sync() { db.ref('lunch_vote').update({ menu1: document.getElementById('menu1').value, menu2: document.getElementById('menu2').value, menu3: document.getElementById('menu3').value }); }
-    function vote(i, v) { db.ref('lunch_vote').once('value').then(snap => { const current = snap.val() ? snap.val()['vote_'+i] : 0; if (current === v) { db.ref('lunch_vote').update({ ['vote_'+i]: 0 }); } else { db.ref('lunch_vote').update({ ['vote_'+i]: v }); } }); }
+    function vote(i, v) { 
+        db.ref('lunch_vote').once('value').then(snap => {
+            const current = snap.val() ? snap.val()['vote_'+i] : 0;
+            if (current === v) { db.ref('lunch_vote').update({ ['vote_'+i]: 0 }); }
+            else { db.ref('lunch_vote').update({ ['vote_'+i]: v }); }
+        });
+    }
     function resetData() { if(confirm("모든 데이터를 초기화할까요?")) db.ref('lunch_vote').set(null); }
+    function addNewRestaurant() { const name = prompt("추가하실 음식점 이름을 입력해주세요."); if(name) { alert(`'${name}' 식당 정보 입력 기능 구현 예정`); } }
 </script>
 </body>
 </html>
