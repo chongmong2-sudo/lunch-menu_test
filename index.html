@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>오늘 모먹지? - 메뉴판 줌 버전</title>
+    <title>오늘 모먹지? - 메뉴 썸네일 상단바 버전</title>
     <script type="text/javascript" src="https://oapi.map.naver.com/openapi/v3/maps.js?ncpKeyId=z6vojrwz9x"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
@@ -14,10 +14,51 @@
             --primary: #3b82f6; --accent: #f59e0b; --danger: #ef4444; 
             --bg: #f8fafc; --card-bg: #ffffff; --text-main: #1e293b;
             --text-sub: #64748b; --border: #e2e8f0; --shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+            --header-h: 80px;
         }
 
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Pretendard', sans-serif; }
-        body { display: flex; height: 100vh; overflow: hidden; background: var(--bg); color: var(--text-main); }
+        body { display: flex; height: 100vh; overflow: hidden; background: var(--bg); color: var(--text-main); flex-direction: column; }
+        
+        /* --- 상단 메뉴 썸네일 바 --- */
+        .top-selection-bar {
+            height: var(--header-h);
+            width: 100%;
+            background: #fff;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            padding: 0 20px;
+            gap: 20px;
+            z-index: 2001;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        }
+        .top-menu-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: #f1f5f9;
+            padding: 5px 15px 5px 5px;
+            border-radius: 40px;
+            border: 1px solid var(--border);
+            max-width: 250px;
+        }
+        .thumb-img {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            object-fit: cover;
+            cursor: pointer;
+            border: 2px solid #fff;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            background: #e2e8f0;
+        }
+        .thumb-img:hover { transform: scale(1.1); transition: 0.2s; }
+        .thumb-info { display: flex; flex-direction: column; }
+        .thumb-label { font-size: 10px; color: var(--text-sub); font-weight: 700; }
+        .thumb-name { font-size: 13px; font-weight: 700; color: var(--text-main); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+        .main-container { display: flex; flex: 1; overflow: hidden; width: 100%; }
         
         .left-panel { width: 420px; background: var(--card-bg); border-right: 1px solid var(--border); display: flex; flex-direction: column; z-index: 100; box-shadow: 4px 0 20px rgba(0,0,0,0.03); }
         .header { padding: 24px 20px; background: #ffffff; color: var(--primary); display: flex; justify-content: space-between; align-items: center; font-weight: 800; font-size: 22px; border-bottom: 1px solid var(--border); }
@@ -68,7 +109,6 @@
         .del-btn { color: var(--danger); cursor: pointer; font-size: 11px; margin-left: 5px; font-weight: bold; }
         .fixed-badge { font-size: 10px; color: #94a3b8; margin-left: 5px; }
 
-        /* --- 메뉴판 모달 (줌 기능 포함 전체화면) --- */
         #menu-modal {
             display: none; position: fixed; z-index: 3000; left: 0; top: 0;
             width: 100%; height: 100%; background-color: rgba(0,0,0,0.9);
@@ -99,6 +139,22 @@
 </head>
 <body>
 
+<div class="top-selection-bar">
+    <div style="font-size: 14px; font-weight: 800; color: var(--text-sub); border-right: 2px solid var(--border); padding-right: 20px; margin-right: 10px;">PICK MENU</div>
+    <div id="top-thumb-1" class="top-menu-item" style="display:none;">
+        <img src="" class="thumb-img" onclick="openMenuByThumb(1)">
+        <div class="thumb-info"><span class="thumb-label">MENU 1</span><span class="thumb-name" id="tn-1"></span></div>
+    </div>
+    <div id="top-thumb-2" class="top-menu-item" style="display:none;">
+        <img src="" class="thumb-img" onclick="openMenuByThumb(2)">
+        <div class="thumb-info"><span class="thumb-label">MENU 2</span><span class="thumb-name" id="tn-2"></span></div>
+    </div>
+    <div id="top-thumb-3" class="top-menu-item" style="display:none;">
+        <img src="" class="thumb-img" onclick="openMenuByThumb(3)">
+        <div class="thumb-info"><span class="thumb-label">MENU 3</span><span class="thumb-name" id="tn-3"></span></div>
+    </div>
+</div>
+
 <div id="menu-modal">
     <div class="modal-header-info">
         <h3 id="modal-title">메뉴판</h3>
@@ -111,69 +167,71 @@
     <div class="zoom-guide">마우스 휠로 확대/축소, 드래그로 이동 가능</div>
 </div>
 
-<div class="left-panel">
-    <div class="header">🍱 오늘 모먹지?</div>
-    <div class="scroll-area">
-        <div class="section">
-            <div class="section-title">1. 선착순 메뉴 선점 <button class="reset-btn" onclick="resetData()">↻ 초기화</button></div>
-            <select id="menu1" onchange="sync()"><option value="">메뉴 선택</option></select>
-            <select id="menu2" onchange="sync()"><option value="">메뉴 선택</option></select>
-            <select id="menu3" onchange="sync()"><option value="">메뉴 선택</option></select>
-        </div>
-        <div class="section">
-            <div class="section-title">2. 실시간 투표 현황 <span style="font-size:12px; font-weight:400; color:var(--text-sub);"><span id="total-participants" style="font-weight:700; color:var(--primary);">0</span>명 참여</span></div>
-            <table class="voting-table">
-                <thead>
-                    <tr>
-                        <th>이름</th>
-                        <th><span class="header-menu-text">메뉴</span><span id="count-m1" class="count-badge">0</span><span id="label-m1" class="menu-label">-</span></th>
-                        <th><span class="header-menu-text">메뉴</span><span id="count-m2" class="count-badge">0</span><span id="label-m2" class="menu-label">-</span></th>
-                        <th><span class="header-menu-text">메뉴</span><span id="count-m3" class="count-badge">0</span><span id="label-m3" class="menu-label">-</span></th>
-                    </tr>
-                </thead>
-                <tbody id="list"></tbody>
-            </table>
-        </div>
-    </div>
-    <div id="bottom-info-panel">
-        <div class="info-header">
-            <div class="info-title" id="res-name">-</div>
-            <div style="font-size:13px; color:var(--primary); font-weight:600;" id="res-cat">-</div>
-        </div>
-        <div class="info-row"><span class="info-label">거리/평점</span> <span id="res-dist">-</span> · <span id="res-rate">-</span></div>
-        <div class="info-row"><span class="info-label">대표메뉴</span> <span id="res-menu" style="color:var(--text-main); font-weight:600;">-</span></div>
-        <div class="info-row"><span class="info-label">전화번호</span> <span id="res-tel">-</span></div>
-        <div class="info-row"><span class="info-label">상세주소</span> <span id="res-addr">-</span></div>
-        <div class="info-btns">
-            <a href="#" id="link-map" target="_blank" class="btn-link" style="background: #03C75A;">네이버 지도</a>
-            <button onclick="openMenuModal()" id="link-menu" class="btn-link" style="background: var(--accent);">메뉴판 보기</button>
-            <button onclick="deleteRest()" id="btn-delete-rest" class="btn-link" style="background: var(--danger); display:none;">식당 삭제</button>
-        </div>
-    </div>
-</div>
-
-<div class="right-panel">
-    <div id="map"></div>
-    <button id="admin-toggle" onclick="toggleAdmin()">+ 신규 음식점 추가</button>
-    
-    <div id="admin-panel">
-        <div class="admin-header">식당 관리 <span onclick="toggleAdmin()" style="cursor:pointer;">×</span></div>
-        <div class="admin-body">
-            <p style="font-size:11px; color:var(--text-sub); margin-bottom:10px;">초기 식당은 삭제가 불가능합니다.</p>
-            <input type="text" id="add-name" class="admin-input" placeholder="식당 이름">
-            <input type="text" id="add-cat" class="admin-input" placeholder="분류 (예: 한식)">
-            <input type="text" id="add-menu" class="admin-input" placeholder="대표 메뉴">
-            <div style="display:flex; gap:5px;">
-                <input type="text" id="add-lat" class="admin-input" placeholder="위도(Lat)">
-                <input type="text" id="add-lng" class="admin-input" placeholder="경도(Lng)">
+<div class="main-container">
+    <div class="left-panel">
+        <div class="header">🍱 오늘 모먹지?</div>
+        <div class="scroll-area">
+            <div class="section">
+                <div class="section-title">1. 선착순 메뉴 선점 <button class="reset-btn" onclick="resetData()">↻ 초기화</button></div>
+                <select id="menu1" onchange="sync()"><option value="">메뉴 선택</option></select>
+                <select id="menu2" onchange="sync()"><option value="">메뉴 선택</option></select>
+                <select id="menu3" onchange="sync()"><option value="">메뉴 선택</option></select>
             </div>
-            <input type="text" id="add-dist" class="admin-input" placeholder="거리 (예: 50m)">
-            <input type="text" id="add-rate" class="admin-input" placeholder="평점 (예: 85)">
-            <input type="text" id="add-tel" class="admin-input" placeholder="전화번호">
-            <input type="text" id="add-addr" class="admin-input" placeholder="주소">
-            <button class="admin-btn" onclick="addNewRest()">식당 등록 하기</button>
-            <hr style="margin:15px 0; border:0; border-top:1px solid var(--border);">
-            <div id="rest-manage-list" style="font-size:12px;"></div>
+            <div class="section">
+                <div class="section-title">2. 실시간 투표 현황 <span style="font-size:12px; font-weight:400; color:var(--text-sub);"><span id="total-participants" style="font-weight:700; color:var(--primary);">0</span>명 참여</span></div>
+                <table class="voting-table">
+                    <thead>
+                        <tr>
+                            <th>이름</th>
+                            <th><span class="header-menu-text">메뉴</span><span id="count-m1" class="count-badge">0</span><span id="label-m1" class="menu-label">-</span></th>
+                            <th><span class="header-menu-text">메뉴</span><span id="count-m2" class="count-badge">0</span><span id="label-m2" class="menu-label">-</span></th>
+                            <th><span class="header-menu-text">메뉴</span><span id="count-m3" class="count-badge">0</span><span id="label-m3" class="menu-label">-</span></th>
+                        </tr>
+                    </thead>
+                    <tbody id="list"></tbody>
+                </table>
+            </div>
+        </div>
+        <div id="bottom-info-panel">
+            <div class="info-header">
+                <div class="info-title" id="res-name">-</div>
+                <div style="font-size:13px; color:var(--primary); font-weight:600;" id="res-cat">-</div>
+            </div>
+            <div class="info-row"><span class="info-label">거리/평점</span> <span id="res-dist">-</span> · <span id="res-rate">-</span></div>
+            <div class="info-row"><span class="info-label">대표메뉴</span> <span id="res-menu" style="color:var(--text-main); font-weight:600;">-</span></div>
+            <div class="info-row"><span class="info-label">전화번호</span> <span id="res-tel">-</span></div>
+            <div class="info-row"><span class="info-label">상세주소</span> <span id="res-addr">-</span></div>
+            <div class="info-btns">
+                <a href="#" id="link-map" target="_blank" class="btn-link" style="background: #03C75A;">네이버 지도</a>
+                <button onclick="openMenuModal()" id="link-menu" class="btn-link" style="background: var(--accent);">메뉴판 보기</button>
+                <button onclick="deleteRest()" id="btn-delete-rest" class="btn-link" style="background: var(--danger); display:none;">식당 삭제</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="right-panel">
+        <div id="map"></div>
+        <button id="admin-toggle" onclick="toggleAdmin()">+ 신규 음식점 추가</button>
+        
+        <div id="admin-panel">
+            <div class="admin-header">식당 관리 <span onclick="toggleAdmin()" style="cursor:pointer;">×</span></div>
+            <div class="admin-body">
+                <p style="font-size:11px; color:var(--text-sub); margin-bottom:10px;">초기 식당은 삭제가 불가능합니다.</p>
+                <input type="text" id="add-name" class="admin-input" placeholder="식당 이름">
+                <input type="text" id="add-cat" class="admin-input" placeholder="분류 (예: 한식)">
+                <input type="text" id="add-menu" class="admin-input" placeholder="대표 메뉴">
+                <div style="display:flex; gap:5px;">
+                    <input type="text" id="add-lat" class="admin-input" placeholder="위도(Lat)">
+                    <input type="text" id="add-lng" class="admin-input" placeholder="경도(Lng)">
+                </div>
+                <input type="text" id="add-dist" class="admin-input" placeholder="거리 (예: 50m)">
+                <input type="text" id="add-rate" class="admin-input" placeholder="평점 (예: 85)">
+                <input type="text" id="add-tel" class="admin-input" placeholder="전화번호">
+                <input type="text" id="add-addr" class="admin-input" placeholder="주소">
+                <button class="admin-btn" onclick="addNewRest()">식당 등록 하기</button>
+                <hr style="margin:15px 0; border:0; border-top:1px solid var(--border);">
+                <div id="rest-manage-list" style="font-size:12px;"></div>
+            </div>
         </div>
     </div>
 </div>
@@ -253,7 +311,6 @@
     let selectedRestData = null;
     let map;
 
-    // --- 줌/드래그 변수 ---
     let scale = 1, posX = 0, posY = 0, startX = 0, startY = 0, isDragging = false;
 
     window.onload = function() {
@@ -279,12 +336,21 @@
 
         db.ref('lunch_vote').on('value', snap => {
             const data = snap.val() || {};
-            document.getElementById('menu1').value = data.menu1 || "";
-            document.getElementById('menu2').value = data.menu2 || "";
-            document.getElementById('menu3').value = data.menu3 || "";
-            document.getElementById('label-m1').innerText = data.menu1 || "-";
-            document.getElementById('label-m2').innerText = data.menu2 || "-";
-            document.getElementById('label-m3').innerText = data.menu3 || "-";
+            const m1 = data.menu1 || "";
+            const m2 = data.menu2 || "";
+            const m3 = data.menu3 || "";
+
+            document.getElementById('menu1').value = m1;
+            document.getElementById('menu2').value = m2;
+            document.getElementById('menu3').value = m3;
+            document.getElementById('label-m1').innerText = m1 || "-";
+            document.getElementById('label-m2').innerText = m2 || "-";
+            document.getElementById('label-m3').innerText = m3 || "-";
+
+            // 상단 썸네일 업데이트
+            updateTopThumb(1, m1);
+            updateTopThumb(2, m2);
+            updateTopThumb(3, m3);
 
             const tbody = document.getElementById('list'); 
             tbody.innerHTML = '';
@@ -305,10 +371,7 @@
             document.getElementById('count-m3').innerText = menuCounts[3];
         });
 
-        // --- 줌/드래그 이벤트 리스너 ---
         const container = document.getElementById('zoom-container');
-        const img = document.getElementById('modal-img');
-
         container.addEventListener('wheel', e => {
             e.preventDefault();
             const delta = e.deltaY > 0 ? 0.9 : 1.1;
@@ -336,6 +399,38 @@
     function updateTransform() {
         const img = document.getElementById('modal-img');
         img.style.transform = `translate(${posX}px, ${posY}px) scale(${scale})`;
+    }
+
+    /* 상단 썸네일 바 업데이트 함수 */
+    function updateTopThumb(num, menuName) {
+        const panel = document.getElementById('top-thumb-' + num);
+        const nameEl = document.getElementById('tn-' + num);
+        const imgEl = panel.querySelector('img');
+
+        if(!menuName) {
+            panel.style.display = 'none';
+            return;
+        }
+
+        const rest = allRests.find(r => r.name === menuName);
+        if(rest) {
+            panel.style.display = 'flex';
+            nameEl.innerText = rest.name;
+            imgEl.src = rest.menuUrl || ""; 
+            // 이미지가 없으면 기본 회색 처리 (CSS background 로 처리됨)
+        } else {
+            panel.style.display = 'none';
+        }
+    }
+
+    /* 상단 썸네일 클릭 시 모달 열기 */
+    function openMenuByThumb(num) {
+        const menuName = document.getElementById('menu' + num).value;
+        const rest = allRests.find(r => r.name === menuName);
+        if(rest) {
+            selectedRestData = rest; // 선택 데이터 동기화
+            openMenuModal();
+        }
     }
 
     function updateRestUI() {
@@ -384,11 +479,9 @@
         document.getElementById('res-tel').innerText = r.tel;
         document.getElementById('res-addr').innerText = r.addr;
         document.getElementById('link-map').href = `https://map.naver.com/v5/search/${encodeURIComponent(r.name)}`;
-        
         document.getElementById('btn-delete-rest').style.display = r.isFixed ? 'none' : 'block';
     }
 
-    /* 메뉴판 팝업 열기 */
     function openMenuModal() {
         if (!selectedRestData) return;
         const modal = document.getElementById('menu-modal');
@@ -397,8 +490,6 @@
         const title = document.getElementById('modal-title');
 
         title.innerText = selectedRestData.name + " 메뉴판";
-        
-        // 초기화
         scale = 1; posX = 0; posY = 0;
         updateTransform();
 
@@ -413,7 +504,6 @@
         modal.style.display = 'block';
     }
 
-    /* 메뉴판 팝업 닫기 */
     function closeMenuModal() {
         document.getElementById('menu-modal').style.display = 'none';
     }
