@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>오늘 모먹지? - 식당 관리 보호 버전</title>
+    <title>오늘 모먹지? - 메뉴판 줌 버전</title>
     <script type="text/javascript" src="https://oapi.map.naver.com/openapi/v3/maps.js?ncpKeyId=z6vojrwz9x"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
@@ -68,41 +68,47 @@
         .del-btn { color: var(--danger); cursor: pointer; font-size: 11px; margin-left: 5px; font-weight: bold; }
         .fixed-badge { font-size: 10px; color: #94a3b8; margin-left: 5px; }
 
-        /* 메뉴판 모달 팝업 스타일 */
+        /* --- 메뉴판 모달 (줌 기능 포함 전체화면) --- */
         #menu-modal {
             display: none; position: fixed; z-index: 3000; left: 0; top: 0;
-            width: 100%; height: 100%; background-color: rgba(0,0,0,0.8);
-            backdrop-filter: blur(4px);
+            width: 100%; height: 100%; background-color: rgba(0,0,0,0.9);
+            overflow: hidden; touch-action: none;
         }
-        .modal-content {
-            position: relative; background-color: #fff; margin: 2% auto;
-            padding: 15px; border-radius: 20px; width: 95%; max-width: 800px;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.2); text-align: center;
+        .modal-header-info {
+            position: absolute; top: 0; left: 0; width: 100%; padding: 20px;
+            color: white; z-index: 3001; background: linear-gradient(to bottom, rgba(0,0,0,0.7), transparent);
+            display: flex; justify-content: space-between; align-items: center;
         }
-        .modal-close {
-            position: absolute; top: 15px; right: 20px; color: #aaa;
-            font-size: 28px; font-weight: bold; cursor: pointer; z-index: 10;
+        .modal-close { font-size: 35px; font-weight: bold; cursor: pointer; color: #fff; padding: 0 10px; }
+        
+        #zoom-container {
+            width: 100%; height: 100%; display: flex; align-items: center; justify-content: center;
+            cursor: grab; overflow: hidden;
         }
-        .modal-close:hover { color: #000; }
-        /* 확대 기능용 스타일 추가 */
+        #zoom-container:active { cursor: grabbing; }
         #modal-img { 
-            width: 100%; border-radius: 10px; max-height: 80vh; 
-            object-fit: contain; margin-top: 30px; 
-            cursor: zoom-in; transition: transform 0.2s;
+            max-width: 90%; max-height: 90%; transition: transform 0.1s ease-out; 
+            transform-origin: center; user-select: none; -webkit-user-drag: none;
         }
-        #modal-img:active { transform: scale(1.02); }
+        .zoom-guide {
+            position: absolute; bottom: 30px; left: 50%; transform: translateX(-50%);
+            color: rgba(255,255,255,0.7); font-size: 13px; background: rgba(0,0,0,0.5);
+            padding: 8px 16px; border-radius: 20px; pointer-events: none;
+        }
     </style>
 </head>
 <body>
 
 <div id="menu-modal">
-    <div class="modal-content">
+    <div class="modal-header-info">
+        <h3 id="modal-title">메뉴판</h3>
         <span class="modal-close" onclick="closeMenuModal()">&times;</span>
-        <h3 id="modal-title" style="margin-bottom:5px;">메뉴판</h3>
-        <p style="font-size: 11px; color: var(--text-sub); margin-bottom: 10px;">이미지를 클릭하면 원본 크기로 볼 수 있습니다.</p>
-        <img id="modal-img" src="" alt="메뉴판 이미지" onclick="zoomImage()">
-        <p id="modal-fallback" style="display:none; padding: 40px 0; color: var(--text-sub);">메뉴판 이미지가 없습니다.</p>
     </div>
+    <div id="zoom-container">
+        <img id="modal-img" src="" alt="메뉴판 이미지">
+        <p id="modal-fallback" style="display:none; color: white;">메뉴판 이미지가 없습니다.</p>
+    </div>
+    <div class="zoom-guide">마우스 휠로 확대/축소, 드래그로 이동 가능</div>
 </div>
 
 <div class="left-panel">
@@ -149,6 +155,7 @@
 <div class="right-panel">
     <div id="map"></div>
     <button id="admin-toggle" onclick="toggleAdmin()">+ 신규 음식점 추가</button>
+    
     <div id="admin-panel">
         <div class="admin-header">식당 관리 <span onclick="toggleAdmin()" style="cursor:pointer;">×</span></div>
         <div class="admin-body">
@@ -172,13 +179,12 @@
 </div>
 
 <script>
-    // Firebase 및 데이터 변수 (기존과 동일)
     const firebaseConfig = { apiKey: "AIzaSyAcyRvDUV67IJi3o8Z1Dl2tDHBATCN_d4Q", authDomain: "lunch-menu-3c36c.firebaseapp.com", databaseURL: "https://lunch-menu-3c36c-default-rtdb.firebaseio.com", projectId: "lunch-menu-3c36c", storageBucket: "lunch-menu-3c36c.appspot.com", messagingSenderId: "498939490952", appId: "1:498939490952:web:9849dd97c3089a153a253d" };
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
+    
     const emps = ["김미연", "김혁중", "류한식", "박윤영", "송원호", "신윤철", "안서형", "우성욱", "이홍비", "임호준", "장현진"];
     
-    // 식당 데이터 fixedRests (기존과 동일)
     const fixedRests = [
         {"name":"얌얌한식뷔페","lat":37.476515,"lng":126.889612,"cat":"뷔페","dist":"10m","menu":"한식뷔페","rate":"83.75","tel":"010-5453-1253","addr":"아스크타워 2층","isFixed":true,"menuUrl":"https://search.pstatic.net/common/?src=https%3A%2F%2Fldb-phinf.pstatic.net%2F20250905_131%2F1757062251583OmjAH_JPEG%2F%25BE%25E4%25BE%25E4_%25B7%25CE%25B0%25ED.JPG"},
         {"name":"무스탕키친","lat":37.476927,"lng":126.889926,"cat":"인도네팔","dist":"10m","menu":"커리","rate":"82","tel":"0507-1315-4575","addr":"아스크타워","isFixed":true,"menuUrl":"https://search.pstatic.net/common/?src=https%3A%2F%2Fldb-phinf.pstatic.net%2F20251217_159%2F1765968714422F1MI6_JPEG%2FKakaoTalk_20251217_195125675.jpg"},
@@ -227,7 +233,7 @@
         {"name":"본죽&비빔밥","lat":37.474614,"lng":126.890289,"cat":"죽","dist":"310m","menu":"죽,비빔밥","rate":"-","tel":"0507-1481-5522","addr":"테라타워","isFixed":true,"menuUrl":"https://search.pstatic.net/common/?src=http%3A%2F%2Fblogfiles.naver.net%2FMjAyMjExMDdfMjMz%2FMDAxNjY3ODI3NjIxOTc1.IpLaE-N6V_CcPkebfU_9kivaJKe-dsD75gDitmm8zn8g.IMXTpgS9t4TGAqY-I7GWYkl2xmSQHDwAw0zqsb0Hxpsg.JPEG.hbhz2020%2FIMG_6254.jpg"},
         {"name":"포빈","lat":37.474172,"lng":126.889909,"cat":"면,밥","dist":"320m","menu":"쌀국수","rate":"84","tel":"0507-1409-2085","addr":"테라타워","isFixed":true,"menuUrl":"https://search.pstatic.net/common/?src=https%3A%2F%2Fldb-phinf.pstatic.net%2F20240605_276%2F1717598412738nu4sP_JPEG%2FMenu.jpg"},
         {"name":"보승회관","lat":37.474096,"lng":126.889676,"cat":"국밥","dist":"325m","menu":"국밥,냉면","rate":"-","tel":"02-6230-6789","addr":"테라타워","isFixed":true,"menuUrl":"https://search.pstatic.net/common/?src=https%3A%2F%2Fldb-phinf.pstatic.net%2F20260213_19%2F17709413597272ISum_JPEG%2F%25B0%25A1%25BB%25EA%25B5%25F0%25C1%25F6%25C5%25D0_%25282%2529.jpg"},
-        {"name":"조려당","lat":37.473987,"lng":126.889357,"cat":"밥","dist":"338m","menu":"두부조림","rate":"-","tel":"02-2085-0127","addr":"타워클래식","isFixed":true,"menuUrl":"https://search.pstatic.net/common/?src=http%3A%2F%2Fblogfiles.naver.net%2FMjAyNjAxMTRfMTYz%2FMDAxNzY4MzgzODI5Nzc2.2caYARNqmStjKRFnTKXlAhtV_fs_uoNuy0qp3_1ikEUg.ZifsXUdgQYGpB1-SbJEB-tcyoJYXzfoeeH3KxknlT0Ig.JPEG%2F900%25A3%25DF20260113%25A3%25DF132620.jpg"},
+        {"name":"조려당","lat":37.473987,"lng":126.889357,"cat":"밥","dist":"338m","menu":"두부조림","rate":"-","tel":"02-2085-0127","addr":"타워클래식","isFixed":true,"menuUrl":"https://search.pstatic.net/common/?src=http%3A%2F%2Fblogfiles.naver.net%2FMjAyNTAxMTRfMTYz%2FMDAxNzY4MzgzODI5Nzc2.2caYARNqmStjKRFnTKXlAhtV_fs_uoNuy0qp3_1ikEUg.ZifsXUdgQYGpB1-SbJEB-tcyoJYXzfoeeH3KxknlT0Ig.JPEG%2F900%25A3%25DF20260113%25A3%25DF132620.jpg"},
         {"name":"소플러스","lat":37.474071,"lng":126.890126,"cat":"고기","dist":"340m","menu":"솥밥,찌개","rate":"84","tel":"-","addr":"가산동","isFixed":true,"menuUrl":"https://search.pstatic.net/common/?src=https%3A%2F%2Fldb-phinf.pstatic.net%2F20250214_35%2F1739500544358wGKHg_JPEG%2FIMG_3671.jpeg"},
         {"name":"담소소사골순대","lat":37.473942,"lng":126.889373,"cat":"탕","dist":"340m","menu":"순대국,육개장","rate":"-","tel":"02-2085-0151","addr":"타워클래식","isFixed":true,"menuUrl":"https://search.pstatic.net/common/?src=https%3A%2F%2Fldb-phinf.pstatic.net%2F20250602_180%2F1748826739596lPBTo_JPEG%2F%25B0%25A1%25BB%25EA5%25C8%25A3-06.jpg"},
         {"name":"궁정짬뽕","lat":37.473911,"lng":126.889257,"cat":"중식","dist":"345m","menu":"짬뽕","rate":"92","tel":"02-2085-0119","addr":"타워클래식","isFixed":true,"menuUrl":"https://search.pstatic.net/common/?src=https%3A%2F%2Fldb-phinf.pstatic.net%2F20220620_114%2F1655688847598CmMMW_JPEG%2FIMG_8606.jpg"},
@@ -247,23 +253,30 @@
     let selectedRestData = null;
     let map;
 
+    // --- 줌/드래그 변수 ---
+    let scale = 1, posX = 0, posY = 0, startX = 0, startY = 0, isDragging = false;
+
     window.onload = function() {
         map = new naver.maps.Map('map', { center: new naver.maps.LatLng(37.476742, 126.889731), zoom: 17 });
+
         naver.maps.Event.addListener(map, 'click', function(e) {
             document.getElementById('add-lat').value = e.coord.lat().toFixed(6);
             document.getElementById('add-lng').value = e.coord.lng().toFixed(6);
         });
+
         new naver.maps.Marker({
             position: new naver.maps.LatLng(37.476742, 126.889731),
             map: map,
             icon: { content: '<div style="background:var(--danger); color:white; padding:6px 14px; border-radius:30px; font-weight:700; font-size:13px; box-shadow:0 4px 10px rgba(0,0,0,0.2);">아스크타워</div>', anchor: new naver.maps.Point(40, 15) }
         });
+
         db.ref('restaurants').on('value', snap => {
             const dbData = snap.val() || {};
             const dbRests = Object.keys(dbData).map(key => ({ id: key, ...dbData[key], isFixed: false }));
             allRests = [...fixedRests, ...dbRests];
             updateRestUI();
         });
+
         db.ref('lunch_vote').on('value', snap => {
             const data = snap.val() || {};
             document.getElementById('menu1').value = data.menu1 || "";
@@ -272,10 +285,12 @@
             document.getElementById('label-m1').innerText = data.menu1 || "-";
             document.getElementById('label-m2').innerText = data.menu2 || "-";
             document.getElementById('label-m3').innerText = data.menu3 || "-";
+
             const tbody = document.getElementById('list'); 
             tbody.innerHTML = '';
             let totalVoted = 0;
             const menuCounts = { 1: 0, 2: 0, 3: 0 };
+
             emps.forEach((name, i) => {
                 const v = data['vote_'+i] || 0;
                 if(v > 0) { totalVoted++; menuCounts[v]++; }
@@ -289,7 +304,39 @@
             document.getElementById('count-m2').innerText = menuCounts[2];
             document.getElementById('count-m3').innerText = menuCounts[3];
         });
+
+        // --- 줌/드래그 이벤트 리스너 ---
+        const container = document.getElementById('zoom-container');
+        const img = document.getElementById('modal-img');
+
+        container.addEventListener('wheel', e => {
+            e.preventDefault();
+            const delta = e.deltaY > 0 ? 0.9 : 1.1;
+            scale = Math.min(Math.max(0.5, scale * delta), 5);
+            updateTransform();
+        });
+
+        container.addEventListener('mousedown', e => {
+            if (scale > 1) {
+                isDragging = true;
+                startX = e.clientX - posX;
+                startY = e.clientY - posY;
+            }
+        });
+        window.addEventListener('mousemove', e => {
+            if (isDragging) {
+                posX = e.clientX - startX;
+                posY = e.clientY - startY;
+                updateTransform();
+            }
+        });
+        window.addEventListener('mouseup', () => isDragging = false);
     };
+
+    function updateTransform() {
+        const img = document.getElementById('modal-img');
+        img.style.transform = `translate(${posX}px, ${posY}px) scale(${scale})`;
+    }
 
     function updateRestUI() {
         const sels = [document.getElementById('menu1'), document.getElementById('menu2'), document.getElementById('menu3')];
@@ -299,18 +346,22 @@
             allRests.forEach((r, idx) => s.add(new Option(`${idx + 1}. [${r.cat}] ${r.name}`, r.name)));
             s.value = currentVal;
         });
+
         markers.forEach(m => m.setMap(null));
         markers = [];
         const manageList = document.getElementById('rest-manage-list');
         manageList.innerHTML = '<strong>식당 목록 (보호 식당은 삭제 불가)</strong><br>';
+
         allRests.forEach((r, idx) => {
             const marker = new naver.maps.Marker({
                 position: new naver.maps.LatLng(r.lat, r.lng),
                 map: map,
                 icon: { content: `<div class="custom-marker">${idx + 1}. ${r.name}</div>`, anchor: new naver.maps.Point(40, 15) }
             });
+
             naver.maps.Event.addListener(marker, 'click', () => { showDetail(r); });
             markers.push(marker);
+
             const item = document.createElement('div');
             item.style.margin = "5px 0";
             if (r.isFixed) {
@@ -333,6 +384,7 @@
         document.getElementById('res-tel').innerText = r.tel;
         document.getElementById('res-addr').innerText = r.addr;
         document.getElementById('link-map').href = `https://map.naver.com/v5/search/${encodeURIComponent(r.name)}`;
+        
         document.getElementById('btn-delete-rest').style.display = r.isFixed ? 'none' : 'block';
     }
 
@@ -343,7 +395,13 @@
         const img = document.getElementById('modal-img');
         const fallback = document.getElementById('modal-fallback');
         const title = document.getElementById('modal-title');
+
         title.innerText = selectedRestData.name + " 메뉴판";
+        
+        // 초기화
+        scale = 1; posX = 0; posY = 0;
+        updateTransform();
+
         if (selectedRestData.menuUrl && selectedRestData.menuUrl.startsWith('http')) {
             img.src = selectedRestData.menuUrl;
             img.style.display = 'block';
@@ -355,23 +413,9 @@
         modal.style.display = 'block';
     }
 
-    /* 이미지 클릭 시 원본 새창으로 확대 보기 추가 */
-    function zoomImage() {
-        const imgUrl = document.getElementById('modal-img').src;
-        if(imgUrl) {
-            window.open(imgUrl, '_blank');
-        }
-    }
-
+    /* 메뉴판 팝업 닫기 */
     function closeMenuModal() {
         document.getElementById('menu-modal').style.display = 'none';
-    }
-
-    window.onclick = function(event) {
-        const modal = document.getElementById('menu-modal');
-        if (event.target == modal) {
-            modal.style.display = "none";
-        }
     }
 
     function toggleAdmin() {
