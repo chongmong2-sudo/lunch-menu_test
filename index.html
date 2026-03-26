@@ -71,20 +71,26 @@
         /* 메뉴판 모달 팝업 스타일 */
         #menu-modal {
             display: none; position: fixed; z-index: 3000; left: 0; top: 0;
-            width: 100%; height: 100%; background-color: rgba(0,0,0,0.7);
+            width: 100%; height: 100%; background-color: rgba(0,0,0,0.8);
             backdrop-filter: blur(4px);
         }
         .modal-content {
-            position: relative; background-color: #fff; margin: 5% auto;
-            padding: 15px; border-radius: 20px; width: 90%; max-width: 600px;
+            position: relative; background-color: #fff; margin: 2% auto;
+            padding: 15px; border-radius: 20px; width: 95%; max-width: 800px;
             box-shadow: 0 20px 40px rgba(0,0,0,0.2); text-align: center;
         }
         .modal-close {
             position: absolute; top: 15px; right: 20px; color: #aaa;
-            font-size: 28px; font-weight: bold; cursor: pointer;
+            font-size: 28px; font-weight: bold; cursor: pointer; z-index: 10;
         }
         .modal-close:hover { color: #000; }
-        #modal-img { width: 100%; border-radius: 10px; max-height: 70vh; object-fit: contain; margin-top: 30px; }
+        /* 확대 기능용 스타일 추가 */
+        #modal-img { 
+            width: 100%; border-radius: 10px; max-height: 80vh; 
+            object-fit: contain; margin-top: 30px; 
+            cursor: zoom-in; transition: transform 0.2s;
+        }
+        #modal-img:active { transform: scale(1.02); }
     </style>
 </head>
 <body>
@@ -92,8 +98,9 @@
 <div id="menu-modal">
     <div class="modal-content">
         <span class="modal-close" onclick="closeMenuModal()">&times;</span>
-        <h3 id="modal-title" style="margin-bottom:10px;">메뉴판</h3>
-        <img id="modal-img" src="" alt="메뉴판 이미지">
+        <h3 id="modal-title" style="margin-bottom:5px;">메뉴판</h3>
+        <p style="font-size: 11px; color: var(--text-sub); margin-bottom: 10px;">이미지를 클릭하면 원본 크기로 볼 수 있습니다.</p>
+        <img id="modal-img" src="" alt="메뉴판 이미지" onclick="zoomImage()">
         <p id="modal-fallback" style="display:none; padding: 40px 0; color: var(--text-sub);">메뉴판 이미지가 없습니다.</p>
     </div>
 </div>
@@ -142,7 +149,6 @@
 <div class="right-panel">
     <div id="map"></div>
     <button id="admin-toggle" onclick="toggleAdmin()">+ 신규 음식점 추가</button>
-    
     <div id="admin-panel">
         <div class="admin-header">식당 관리 <span onclick="toggleAdmin()" style="cursor:pointer;">×</span></div>
         <div class="admin-body">
@@ -166,13 +172,13 @@
 </div>
 
 <script>
+    // Firebase 및 데이터 변수 (기존과 동일)
     const firebaseConfig = { apiKey: "AIzaSyAcyRvDUV67IJi3o8Z1Dl2tDHBATCN_d4Q", authDomain: "lunch-menu-3c36c.firebaseapp.com", databaseURL: "https://lunch-menu-3c36c-default-rtdb.firebaseio.com", projectId: "lunch-menu-3c36c", storageBucket: "lunch-menu-3c36c.appspot.com", messagingSenderId: "498939490952", appId: "1:498939490952:web:9849dd97c3089a153a253d" };
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
-    
     const emps = ["김미연", "김혁중", "류한식", "박윤영", "송원호", "신윤철", "안서형", "우성욱", "이홍비", "임호준", "장현진"];
     
-    // (이하 식당 데이터 fixedRests 배열 생략 - 원본과 동일)
+    // 식당 데이터 fixedRests (기존과 동일)
     const fixedRests = [
         {"name":"얌얌한식뷔페","lat":37.476515,"lng":126.889612,"cat":"뷔페","dist":"10m","menu":"한식뷔페","rate":"83.75","tel":"010-5453-1253","addr":"아스크타워 2층","isFixed":true,"menuUrl":"https://search.pstatic.net/common/?src=https%3A%2F%2Fldb-phinf.pstatic.net%2F20250905_131%2F1757062251583OmjAH_JPEG%2F%25BE%25E4%25BE%25E4_%25B7%25CE%25B0%25ED.JPG"},
         {"name":"무스탕키친","lat":37.476927,"lng":126.889926,"cat":"인도네팔","dist":"10m","menu":"커리","rate":"82","tel":"0507-1315-4575","addr":"아스크타워","isFixed":true,"menuUrl":"https://search.pstatic.net/common/?src=https%3A%2F%2Fldb-phinf.pstatic.net%2F20251217_159%2F1765968714422F1MI6_JPEG%2FKakaoTalk_20251217_195125675.jpg"},
@@ -243,25 +249,21 @@
 
     window.onload = function() {
         map = new naver.maps.Map('map', { center: new naver.maps.LatLng(37.476742, 126.889731), zoom: 17 });
-
         naver.maps.Event.addListener(map, 'click', function(e) {
             document.getElementById('add-lat').value = e.coord.lat().toFixed(6);
             document.getElementById('add-lng').value = e.coord.lng().toFixed(6);
         });
-
         new naver.maps.Marker({
             position: new naver.maps.LatLng(37.476742, 126.889731),
             map: map,
             icon: { content: '<div style="background:var(--danger); color:white; padding:6px 14px; border-radius:30px; font-weight:700; font-size:13px; box-shadow:0 4px 10px rgba(0,0,0,0.2);">아스크타워</div>', anchor: new naver.maps.Point(40, 15) }
         });
-
         db.ref('restaurants').on('value', snap => {
             const dbData = snap.val() || {};
             const dbRests = Object.keys(dbData).map(key => ({ id: key, ...dbData[key], isFixed: false }));
             allRests = [...fixedRests, ...dbRests];
             updateRestUI();
         });
-
         db.ref('lunch_vote').on('value', snap => {
             const data = snap.val() || {};
             document.getElementById('menu1').value = data.menu1 || "";
@@ -270,12 +272,10 @@
             document.getElementById('label-m1').innerText = data.menu1 || "-";
             document.getElementById('label-m2').innerText = data.menu2 || "-";
             document.getElementById('label-m3').innerText = data.menu3 || "-";
-
             const tbody = document.getElementById('list'); 
             tbody.innerHTML = '';
             let totalVoted = 0;
             const menuCounts = { 1: 0, 2: 0, 3: 0 };
-
             emps.forEach((name, i) => {
                 const v = data['vote_'+i] || 0;
                 if(v > 0) { totalVoted++; menuCounts[v]++; }
@@ -299,22 +299,18 @@
             allRests.forEach((r, idx) => s.add(new Option(`${idx + 1}. [${r.cat}] ${r.name}`, r.name)));
             s.value = currentVal;
         });
-
         markers.forEach(m => m.setMap(null));
         markers = [];
         const manageList = document.getElementById('rest-manage-list');
         manageList.innerHTML = '<strong>식당 목록 (보호 식당은 삭제 불가)</strong><br>';
-
         allRests.forEach((r, idx) => {
             const marker = new naver.maps.Marker({
                 position: new naver.maps.LatLng(r.lat, r.lng),
                 map: map,
                 icon: { content: `<div class="custom-marker">${idx + 1}. ${r.name}</div>`, anchor: new naver.maps.Point(40, 15) }
             });
-
             naver.maps.Event.addListener(marker, 'click', () => { showDetail(r); });
             markers.push(marker);
-
             const item = document.createElement('div');
             item.style.margin = "5px 0";
             if (r.isFixed) {
@@ -337,7 +333,6 @@
         document.getElementById('res-tel').innerText = r.tel;
         document.getElementById('res-addr').innerText = r.addr;
         document.getElementById('link-map').href = `https://map.naver.com/v5/search/${encodeURIComponent(r.name)}`;
-        
         document.getElementById('btn-delete-rest').style.display = r.isFixed ? 'none' : 'block';
     }
 
@@ -348,9 +343,7 @@
         const img = document.getElementById('modal-img');
         const fallback = document.getElementById('modal-fallback');
         const title = document.getElementById('modal-title');
-
         title.innerText = selectedRestData.name + " 메뉴판";
-        
         if (selectedRestData.menuUrl && selectedRestData.menuUrl.startsWith('http')) {
             img.src = selectedRestData.menuUrl;
             img.style.display = 'block';
@@ -362,12 +355,18 @@
         modal.style.display = 'block';
     }
 
-    /* 메뉴판 팝업 닫기 */
+    /* 이미지 클릭 시 원본 새창으로 확대 보기 추가 */
+    function zoomImage() {
+        const imgUrl = document.getElementById('modal-img').src;
+        if(imgUrl) {
+            window.open(imgUrl, '_blank');
+        }
+    }
+
     function closeMenuModal() {
         document.getElementById('menu-modal').style.display = 'none';
     }
 
-    // 모달 외부 클릭 시 닫기
     window.onclick = function(event) {
         const modal = document.getElementById('menu-modal');
         if (event.target == modal) {
@@ -393,7 +392,7 @@
             rate: document.getElementById('add-rate').value || "-",
             tel: document.getElementById('add-tel').value || "-",
             addr: document.getElementById('add-addr').value || "-",
-            menuUrl: "" // 신규 등록 시 빈값
+            menuUrl: "" 
         };
         db.ref('restaurants').push(newRest);
         alert("등록 완료!");
