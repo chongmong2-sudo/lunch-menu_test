@@ -327,14 +327,14 @@
             icon: { content: '<div style="background:var(--danger); color:white; padding:6px 14px; border-radius:30px; font-weight:700; font-size:13px; box-shadow:0 4px 10px rgba(0,0,0,0.2);">아스크타워</div>', anchor: new naver.maps.Point(40, 15) }
         });
 
-        db.ref('restaurants').on('value', snap => {
+        db.ref('test/restaurants').on('value', snap => {
             const dbData = snap.val() || {};
             const dbRests = Object.keys(dbData).map(key => ({ id: key, ...dbData[key], isFixed: false }));
             allRests = [...fixedRests, ...dbRests];
             updateRestUI();
         });
 
-        db.ref('lunch_vote').on('value', snap => {
+        db.ref('test/lunch_vote').on('value', snap => {
             const data = snap.val() || {};
             const m1 = data.menu1 || "";
             const m2 = data.menu2 || "";
@@ -528,7 +528,7 @@
             addr: document.getElementById('add-addr').value || "-",
             menuUrl: "" 
         };
-        db.ref('restaurants').push(newRest);
+        db.ref('test/restaurants').push(newRest);
         alert("등록 완료!");
         document.querySelectorAll('.admin-input').forEach(i => i.value = "");
     }
@@ -549,7 +549,7 @@
     }
 
     function sync() { 
-        db.ref('lunch_vote').update({ 
+        db.ref('test/lunch_vote').update({ 
             menu1: document.getElementById('menu1').value, 
             menu2: document.getElementById('menu2').value, 
             menu3: document.getElementById('menu3').value 
@@ -557,13 +557,13 @@
     }
     
     function vote(i, v) { 
-        db.ref('lunch_vote').once('value').then(snap => {
+        db.ref('test/lunch_vote').once('value').then(snap => {
             const current = snap.val() ? snap.val()['vote_'+i] : 0;
-            if (current === v) { db.ref('lunch_vote').update({ ['vote_'+i]: 0 }); }
-            else { db.ref('lunch_vote').update({ ['vote_'+i]: v }); }
+            if (current === v) { db.ref('test/lunch_vote').update({ ['vote_'+i]: 0 }); }
+            else { db.ref('test/lunch_vote').update({ ['vote_'+i]: v }); }
         });
     }
-    function resetData() { if(confirm("모든 데이터를 초기화할까요?")) db.ref('lunch_vote').set(null); }
+    function resetData() { if(confirm("모든 데이터를 초기화할까요?")) db.ref('test/lunch_vote').set(null); }
 </script>
 </body>
 </html>
